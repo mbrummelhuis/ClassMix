@@ -1,7 +1,9 @@
 import os
 import torch
 import numpy as np
+from PIL import Image
 import scipy.misc as m
+from pathlib import Path
 
 from torch.utils import data
 
@@ -66,7 +68,7 @@ class cityscapesLoader(data.Dataset):
         :param img_size:
         :param augmentations
         """
-        self.root = root
+        self.root = str(Path(__file__).parent.absolute()) + "/Cityscapes"
         self.split = split
         self.is_transform = is_transform
         self.augmentations = augmentations
@@ -78,9 +80,9 @@ class cityscapesLoader(data.Dataset):
         self.mean = img_mean
         self.files = {}
 
-        self.images_base = os.path.join(self.root, "leftImg8bit_trainvaltest","leftImg8bit", self.split)
+        self.images_base = os.path.join(self.root,"leftImg8bit", self.split)
         self.annotations_base = os.path.join(
-            self.root, "gtFine_trainvaltest", "gtFine", self.split
+            self.root, "gtFine", self.split
         )
 
         self.files[split] = recursive_glob(rootdir=self.images_base, suffix=".png")
@@ -138,10 +140,10 @@ class cityscapesLoader(data.Dataset):
             os.path.basename(img_path)[:-15] + "gtFine_labelIds.png",
         )
 
-        img = m.imread(img_path)
+        img = np.array(m.imread(img_path))
         img = np.array(img, dtype=np.uint8)
 
-        lbl = m.imread(lbl_path)
+        lbl = np.array(m.imread(lbl_path))
         lbl = np.array(lbl, dtype=np.uint8)
         lbl = self.encode_segmap(lbl)
 
@@ -158,13 +160,16 @@ class cityscapesLoader(data.Dataset):
 
     def transform(self, img, lbl):
         """transform
-
         :param img:
         :param lbl:
         """
+        #img = np.array(Image.fromarray(img).resize(size=(self.img_size[0], self.img_size[1])))
+        # Commented because m.imresize is deprecated.
         img = m.imresize(
             img, (self.img_size[0], self.img_size[1])
         )  # uint8 with RGB mode
+        #print('IMAGE FOR DEBUGGING')
+        #print(img)
         img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
         img -= self.mean
@@ -177,7 +182,10 @@ class cityscapesLoader(data.Dataset):
 
         classes = np.unique(lbl)
         lbl = lbl.astype(float)
+        # lbl = np.array(Image.fromarray(lbl, mode="F").resize(size=(self.img_size[0], self.img_size[1]),resample=Image.NEAREST))
+        # Commented because m.imsize is deprecated
         lbl = m.imresize(lbl, (self.img_size[0], self.img_size[1]), "nearest", mode="F")
+
         lbl = lbl.astype(int)
         if not np.all(classes == np.unique(lbl)):
             print("WARN: resizing labels yielded fewer classes")
