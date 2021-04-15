@@ -226,6 +226,7 @@ def _resume_checkpoint(resume_path, model, optimizer, ema_model):
     return iteration, model, optimizer, ema_model
 
 def main():
+    torch.cuda.empty_cache()
     print(config)
 
     best_mIoU = 0
@@ -325,7 +326,7 @@ def main():
             optimizer = optim.SGD(model.module.optim_parameters(learning_rate_object),
                         lr=learning_rate, momentum=momentum,weight_decay=weight_decay)
         else:
-            optimizer = optim.SGD(model.optim_parameters(learning_rate_object),
+            optimizer = optim.SGD(model.optim_parameters(learning_rate_object), ## DOES THIS CAUSE THE USERWARNING?
                         lr=learning_rate, momentum=momentum,weight_decay=weight_decay)
 
     optimizer.zero_grad()
@@ -362,7 +363,7 @@ def main():
 
         # Training loss for labeled data only
         try:
-            batch = next(trainloader_iter)
+            batch = next(trainloader_iter) 
             if batch[0].shape[0] != batch_size:
                 batch = next(trainloader_iter)
         except:
@@ -378,7 +379,8 @@ def main():
         labels = labels.cuda()
 
         images, labels = weakTransform(weak_parameters, data = images, target = labels)
-        pred = interp(model(images))
+        intermediary_var = model(images)
+        pred = interp(intermediary_var)
 
         L_l = loss_calc(pred, labels)
 
@@ -435,7 +437,7 @@ def main():
                         MixMask = torch.cat((MixMask,torch.from_numpy(transformmasks.generate_cow_mask(img_size, sigma, p, seed=None)).unsqueeze(0).cuda().float()))
 
             elif mix_mask == None:
-                MixMask = torch.ones((inputs_u_w.shape))
+                MixMask = torch.ones((inputs_u_w.shape)).cuda()
 
             strong_parameters = {"Mix": MixMask}
             if random_flip:
