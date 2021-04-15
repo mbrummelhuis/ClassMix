@@ -25,5 +25,6 @@ python3 trainSSL.py --config ./configs/configSSL.json --name SSL
 
 python3 trainSSL.py --resume-path *checkpoint.pth*
 
-
+## Fork readme
+This fork has some files added used for the CS4240 - Deep Learning course at TU Delft. For this course a reproduction of the paper's results was done. When using this code, you are advised to check the paths in the code, as some of them may be hardcoded to directories that do not exist on your computer.
 
